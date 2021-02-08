@@ -1,10 +1,15 @@
 package fr.renardfute.steamapi;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import fr.renardfute.steamapi.objects.Item;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import fr.renardfute.steamapi.objects.App;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -65,7 +70,27 @@ public class  SteamAPI {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return "";
+        return "EMPTY BODY";
+    }
+
+    /**
+     * This function is just useful for making request that don't needs the steamLoginSecure cookie.
+     * @param url Of the request without the steamLoginSecure cookie.
+     * @return The body of the response. <b>/!\ Caution as I said it can be empty.</b>
+     * @author RenardFute
+     * @since 1.0
+     */
+    public static String requestStatic(String url){
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        try {
+            Response response = SteamAPI.client.newCall(request).execute();
+            return Objects.requireNonNull(response.body()).string();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "EMPTY BODY";
     }
 
     /**
@@ -115,11 +140,19 @@ public class  SteamAPI {
      * @since 1.0
      */
     public int getAppPlayerCount(App app){
+        JSONParser parser = new JSONParser();
         String url = "https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?format=json&appid=";
         url += app.appID;
-        App.PlayerCountResponse response = new Gson().fromJson(request(url), App.PlayerCountResponse.class);
-        System.out.println(app.name + " has " + response.playerCount.count + " players online");
-        return response.playerCount.count;
+        String result = request(url);
+        JSONObject object = null;
+        try {
+            object = (JSONObject) parser.parse(result);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        assert object != null;
+        JSONObject response = (JSONObject) object.get("response");
+        return (int) response.get("player_count");
     }
 
     /**
@@ -129,9 +162,71 @@ public class  SteamAPI {
      * @since 1.0
      */
     public List<App> getAllApps(){
+        JSONParser parser = new JSONParser();
         String sApps = request("http://api.steampowered.com/ISteamApps/GetAppList/v0002/?key=STEAMKEY&format=json");
-        App.Request requestedApps = new Gson().fromJson(sApps, App.Request.class);
-        return requestedApps.appList.apps;
+        JSONObject object = null;
+        try {
+            object = (JSONObject) parser.parse(sApps);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        assert object != null;
+        JSONObject object_ = (JSONObject) object.get("applist");
+        return new Gson().fromJson(object_.get("apps").toString(), new TypeToken<List<App>>(){}.getType());
+    }
+
+    /**
+     * Return the whole app's information. (Way faster than {@link SteamAPI#searchApp(String)} but you have to know the id)
+     * @param id The id of the app you want to get.
+     * @return An app object filled with it's information.
+     * @author renardfute
+     * @since 1.0
+     */
+    public App getApp(int id){
+        JSONParser parser = new JSONParser();
+        String sRequest = request("https://store.steampowered.com/api/appdetails?appids="+ id +"&l=french");
+        JSONObject object = null;
+        try {
+            object = (JSONObject) parser.parse(sRequest);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        assert object != null;
+        JSONObject object_ = (JSONObject) object.get(id + "");
+
+        App.Data data = new Gson().fromJson(object_.get("data").toString(), App.Data.class);
+
+        return new App(data.id, data.name, data);
+    }
+
+
+    /**
+     * Get the image link to an market item.
+     * @param item the item you want to get the image.
+     * @return ImageLink as a String
+     * @author RenardFute
+     * @since 1.0
+     */
+    public String getItemImage(Item item){
+        if(item.imageUrl != null) return item.imageUrl;
+
+        String sRequest = request("https://steamcommunity.com/market/listings/" + item.app.appID + "/" + item.name.replaceAll(" ", "%20") + "/render?format=json&start=0&count=1&norender=1&currency=" + item.median.currency.value);
+        JSONParser parser = new JSONParser();
+
+        JSONObject object = null;
+        try {
+            object = (JSONObject) parser.parse(sRequest);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        assert object != null;
+        JSONObject assets = (JSONObject) object.get("assets");
+        JSONObject app = (JSONObject) assets.get("" + item.app.appID);
+        JSONObject object_ = (JSONObject) app.get(app.keySet().toArray()[0]);
+        JSONObject object__ = (JSONObject) object_.get(object_.keySet().toArray()[0]);
+        String url = (String) object__.get("icon_url");
+
+        return "https://community.akamai.steamstatic.com/economy/image/"+ url + "/124fx124f";
     }
 
 }

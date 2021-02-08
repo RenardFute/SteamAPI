@@ -1,6 +1,8 @@
 package fr.renardfute.steamapi.objects;
 
 import com.google.gson.annotations.SerializedName;
+import fr.renardfute.steamapi.SteamAPI;
+import fr.renardfute.steamapi.utils.Currency;
 
 /**
  * App class for all the apps (mainly game) of steam.
@@ -15,96 +17,98 @@ public class App {
      * @since 1.0
      */
     @SerializedName("appid")
-    public long appID;
+    public int appID;
     /**
      * App name.
      * @since 1.0
      */
     public String name;
 
+    public transient Data data;
+
     /**
      * Main constructor not very useful as the apps are queried from steam.
      * @param appID The app id. {@link App#appID}
      * @param name The app name. {@link App#name}
+     * @param data The app date; {@link App#data}
      * @author renardfute
      * @since 1.0
      */
-    public App(long appID, String name) {
+    public App(int appID, String name, Data data) {
         this.appID = appID;
         this.name = name;
+        this.data = data;
     }
 
     /**
-     * This class is mainly used for deserialization.
+     * This method make the process of getting an item easier and faster.
+     * @param name the name of the item to get.
+     * @param currency the currency you want the item prices to be.
+     * @param api An api object for request.
+     * @return the matching market item.
      * @author renardfute
      * @since 1.0
      */
-    public static class Request{
-
-        /**
-         * A List object used for deserialization.
-         * @since 1.0
-         */
-        @SerializedName("applist")
-        public List appList;
-
-        /**
-         * Constructor for deserialization.
-         * @param appList a List object.
-         * @since 1.0
-         * @author renardfute
-         */
-        public Request(List appList) {
-            this.appList = appList;
-        }
-
+    public Item getItem(String name, Currency currency, SteamAPI api){
+        return new Item(name, this, api, currency);
     }
 
     /**
-     * This class is mainly used for deserialization.
+     * Data class for deserialization of a game
      * @author renardfute
      * @since 1.0
      */
-    public static class List{
-
-        /**
-         * A List of app used for deserialization.
-         * @since 1.0
-         */
-        public java.util.List<App> apps;
-
-        /**
-         * Constructor for deserialization.
-         * @param apps a List apps.
-         * @since 1.0
-         * @author renardfute
-         */
-        public List(java.util.List<App> apps) {
-            this.apps = apps;
-        }
-
-    }
-
-    public static class PlayerCountResponse{
-
-        @SerializedName("response")
-        public PlayerCount playerCount;
-
-        public PlayerCountResponse(PlayerCount playerCount) {
-            this.playerCount = playerCount;
-        }
-    }
-
-    public static class PlayerCount{
-
-        @SerializedName("player_count")
-        public int count;
-        public int result;
-
-        public PlayerCount(int count, int result) {
-            this.count = count;
-            this.result = result;
-        }
+    public static class Data {
+        public String type;
+        public String name;
+        @SerializedName("steam_appid")
+        public int id;
+        @SerializedName("required_age")
+        public String age;
+        @SerializedName("is_free")
+        public boolean isFree;
+        @SerializedName("detailed_description")
+        public String detailedDescription;
+        @SerializedName("about_the_game")
+        public String aboutTheGame;
+        @SerializedName("short_description")
+        public String shortDescription;
+        @SerializedName("supported_languages")
+        public String supportedLanguages;
+        public String reviews;
+        @SerializedName("header_image")
+        public String headerImageUrl;
+        @SerializedName("website")
+        public String websiteUrl;
+        @SerializedName("pc_requirements")
+        public Requirements pc;
+        @SerializedName("mac_requirements")
+        public Requirements mac;
+        @SerializedName("linux_requirements")
+        public Requirements linux;
+        @SerializedName("legal_notice")
+        public String legalNotice;
+        public java.util.List<String> developers;
+        public java.util.List<String> publishers;
+        @SerializedName("packages")
+        public java.util.List<Long> packageIDs;
+        @SerializedName("package_group")
+        public java.util.List<Package> packages;
+        public Platforms platforms;
+        @SerializedName("metacritic")
+        public Info.MetaCritic metaCritic;
+        public java.util.List<Categories> categories;
+        public java.util.List<Screenshots> screenshots;
+        public java.util.List<Movies> movies;
+        public Recommendations recommendations;
+        public Achievements achievements;
+        @SerializedName("release_date")
+        public ReleaseDate releaseDate;
+        @SerializedName("support_info")
+        public Info.Support support;
+        public String background;
+        @SerializedName("content_descriptors")
+        public Info.Content contentDescriptors;
     }
 
 }
