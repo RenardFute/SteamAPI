@@ -77,7 +77,7 @@ public class History<K>{
      * A class for linking date and items
      * @param <K> the type of items to link with dates
      */
-    static class Pair<K> {
+    public static class Pair<K> {
 
         public K item;
         public Date date;
